@@ -1,0 +1,8 @@
+A collection of scripts for creating icalendar files from various sources.
+Currently there are scripts for:
+- sent mail from google mail account
+- firefox history
+
+The sent mail script is done using IMAP to access the properties of the sent mail.
+
+The firefox history is done by loading and querying the places.sqlite database where firefox stores this history.  You probably should quit firefox, and copy this file out of your profile directory before running the script.
