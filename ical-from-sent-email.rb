@@ -11,7 +11,7 @@ end
 imap = Net::IMAP.new('imap.gmail.com', 993, true, nil, false)
 imap.login('scytacki@concord.org', get_password())
 imap.examine('[Gmail]/Sent Mail')
-msgs = imap.search(["BEFORE", "1-May-2010", "SINCE", "1-Apr-2010"])
+msgs = imap.search(["BEFORE", "1-June-2010", "SINCE", "1-May-2010"])
 subjects = imap.fetch(msgs, "BODY[HEADER.FIELDS (SUBJECT)]")
 dates = imap.fetch(msgs, "INTERNALDATE")
 

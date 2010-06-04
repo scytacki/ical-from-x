@@ -5,19 +5,28 @@ require 'sqlite3'
 require 'date'
 require 'icalendar'
 
-db = SQLite3::Database.new( "places.sqlite" )
+db = SQLite3::Database.new( "may-2010/chrome-history.sqlite" )
+
+def googleTime(time)
+  1000000*time + 11644488003600000
+end
+
+def unixTime(gtime)
+  gtime/1000000 - 11644488003.6
+end
 
 year = 2010
 month = 5
-start_time = Time.local(year, month).to_i * 1000000
-end_time = Time.local(year, month + 1).to_i * 1000000
+start_time = googleTime(Time.local(year, month).to_i)
+end_time = googleTime(Time.local(year, month + 1).to_i)
 
 # ["id", "from_visit", "place_id", "visit_date", "visit_type", "session", "id", "url", "title", 
 #  "rev_host", "visit_count", "hidden", "typed", "favicon_id", "frecency", "last_visit_date"]
-query = "select * from moz_historyvisits, moz_places " +
-        "where moz_historyvisits.place_id=moz_places.id " + 
-        "and moz_historyvisits.visit_date>#{start_time} " + 
-        "and moz_historyvisits.visit_date<#{end_time}"
+query = "select * from visits, urls " +
+        "where visits.url=urls.id " + 
+        "and visits.visit_time>#{start_time} " + 
+        "and visits.visit_time<#{end_time}"
+puts query
 length = 0
 cal = Icalendar::Calendar.new
 
@@ -25,15 +34,15 @@ class VisitEvent
   attr_accessor :visit_date, :from_visit, :url, :title, :session
   
   def initialize(row)
-    @from_visit = row[1].to_i
-    @visit_date = row[3].to_i
-    @session = row[5].to_i
+    @from_visit = row[3].to_i
+    @visit_date = row[2].to_i
     @url = row[7]
     @title = row[8]
   end
   
   def visit_time
-    Time.at(self.visit_date / 1000000)
+    # needs to be fixed for the timezone
+    Time.at(unixTime(self.visit_date)) + 4*60*60
   end
   
 end
@@ -75,6 +84,7 @@ visit_trails = []
 
 db.execute(query) {|row|
   last_event = visit_events.last
+  puts row
   event = VisitEvent.new(row)
   visit_events.push(event)
 
