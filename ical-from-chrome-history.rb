@@ -5,7 +5,11 @@ require 'sqlite3'
 require 'date'
 require 'icalendar'
 
-db = SQLite3::Database.new( "may-2010/chrome-history.sqlite" )
+sqlite_file = "june-2010/chrome-history.sqlite"
+ics_file = "/Users/scytacki/Documents/CCProjects/Timesheets/june-2010/ch-history.ics"
+year = 2010
+month = 6
+db = SQLite3::Database.new( sqlite_file )
 
 def googleTime(time)
   1000000*time + 11644488003600000
@@ -15,8 +19,6 @@ def unixTime(gtime)
   gtime/1000000 - 11644488003.6
 end
 
-year = 2010
-month = 5
 start_time = googleTime(Time.local(year, month).to_i)
 end_time = googleTime(Time.local(year, month + 1).to_i)
 
@@ -112,6 +114,6 @@ visit_trails.each {|trail|
 }
 
 puts "length: #{visit_trails.length}"
-File.open("history.ics", 'w') {|f|
+File.open(ics_file, 'w') {|f|
   f.write cal.to_ical
 }
