@@ -1,0 +1,15 @@
+Skype api commands to get info about the history of calls:
+
+get a list of call ids
+SEARCH CALLS
+GET CALL <id> property
+
+properties:
+TIMESTAMP
+PARTNER_DISPNAME
+PARTNER_HANDLE 
+TYPE
+STATUS
+DURATION
+CONF_PARTICIPANTS_COUNT
+CONF_PARTICIPANT n
