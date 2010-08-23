@@ -2,6 +2,8 @@ A collection of scripts for creating icalendar files from various sources.
 Currently there are scripts for:
 - sent mail from google mail account
 - firefox history
+- skype history
+- converting ics file to a csv file
 
 The sent mail script is done using IMAP to access the properties of the sent mail.
 
