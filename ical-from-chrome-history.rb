@@ -4,45 +4,19 @@ require 'rubygems'
 require 'sqlite3'
 require 'date'
 require 'icalendar'
-require 'optparse'
+require 'trollop'
 
-# This hash will hold all of the options
-# parsed from the command-line by
-# OptionParser.
-options = {}
-
-optparse = OptionParser.new do|opts|
-   # Set a banner, displayed at the top
-   # of the help screen.
-   opts.banner = "Usage: #{$0} [options]"
- 
-   # Define the options, and what they do
-   opts.on( '-m', '--month MONTH', Integer, 'Month to filter results with' ) do |mon|
-     options[:month] = mon
-   end
- 
-   opts.on( '-y', '--year YEAR', Integer, 'Year to filter results with' ) do |year|
-     options[:year] = year
-   end
- 
-   opts.on( '-d', '--database DATABASE', 'Database file to process' ) do |db|
-     options[:db] = db
-   end
-
-   opts.on( '-o', '--output OUTPUT', 'Output file to put the resulting ics' ) do |out|
-     options[:out] = out
-   end
-
-   # This displays the help screen, all programs are
-   # assumed to have this option.
-   opts.on( '-h', '--help', 'Display this screen' ) do
-     puts opts
-     exit
-   end
-end.parse!
+# commandline option parsing, trollop is much more concise than optparse
+options = Trollop::options do
+  banner "Usage: #{$0} [options]"
+  opt :month, 'Month to filter results with', :type => :int
+  opt :year, 'Year to filter results with', :type => :int
+  opt :database, 'Database file to process', :type => :string
+  opt :out, 'Output file to put the resulting ics', :type => :string
+end
 
 # "june-2010/chrome-history.sqlite"
-sqlite_file = options[:db]
+sqlite_file = options[:database]
 # "/Users/scytacki/Documents/CCProjects/Timesheets/june-2010/ch-history.ics"
 ics_file = options[:out]
 # 2010

@@ -2,6 +2,14 @@ require 'rubygems'
 require 'appscript'
 require 'icalendar'
 include Appscript
+require 'trollop'
+require 'date'
+
+# commandline option parsing, trollop is much more concise than optparse
+options = Trollop::options do
+  banner "Usage: #{$0} [options]"
+  opt :out, 'Output file to put the resulting ics', :type => :string
+end
 
 # Skype api commands to get info about the history of calls:
 # 
@@ -19,7 +27,10 @@ include Appscript
 # CONF_PARTICIPANTS_COUNT
 # CONF_PARTICIPANT n
 
-ics_file = "/Users/scytacki/Documents/CCProjects/Timesheets/june-2010/skype-calls.ics"
+
+
+# "/Users/scytacki/Documents/CCProjects/Timesheets/june-2010/skype-calls.ics"
+ics_file = options[:out]
 
 @skype = app('Skype')
 

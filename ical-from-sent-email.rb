@@ -3,10 +3,24 @@ require 'highline/import'
 require 'icalendar'
 require 'date'
 require 'net/imap'
+require 'trollop'
+require 'date'
 
-imap_since = "1-June-2010"
-imap_before = "1-July-2010"
-ics_file = "/Users/scytacki/Documents/CCProjects/Timesheets/june-2010/sent-mail.ics"
+# commandline option parsing, trollop is much more concise than optparse
+options = Trollop::options do
+  banner "Usage: #{$0} [options]"
+  opt :month, 'Month to filter results with', :type => :int
+  opt :year, 'Year to filter results with', :type => :int
+  opt :out, 'Output file to put the resulting ics', :type => :string
+end
+
+start_date = Date.civil(options[:year], options[:month])
+imap_since = start_date.strftime("%d-%B-%Y")
+end_date = start_date>>1
+imap_before = end_date.strftime("%d-%B-%Y")
+
+# "/Users/scytacki/Documents/CCProjects/Timesheets/june-2010/sent-mail.ics"
+ics_file = options[:out]
 
 def get_password(prompt="Enter Password")
    ask(prompt) {|q| q.echo = false}
