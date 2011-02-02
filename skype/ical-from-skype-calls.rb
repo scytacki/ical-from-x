@@ -50,6 +50,7 @@ def call_property(call_id, property)
 end
 
 calls_string = skype_send("SEARCH CALLS")
+abort("Need to start skype and log in") if calls_string.nil?
 calls = calls_string.sub('CALLS ', '').split(', ')
 
 cal = Icalendar::Calendar.new
