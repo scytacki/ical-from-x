@@ -20,51 +20,55 @@ end
 
 class LoggedEvent
   attr_accessor :date_time, :line, :type
-  
+
   def initialize(line, type)
     @line = line
     @date_time = get_log_time(line)
     @type = type
   end
-  
+
   def location
-    if(line =~ /dhcp/) 
+    if(line =~ /dhcp/)
       "work"
     else
       "home"
-    end    
+    end
   end
 end
 
 events = []
 
 sys_logs = Dir.glob('/private/var/log/kernel.log*')
-sys_logs.each { |log| 
+sys_logs.each { |log|
   if (log.end_with? 'bz2')
-    file = Bzip2::Reader.open(log)
+    file = Bzip2::Reader.open(log, :encoding => "US-ASCII")
   elsif
-    file = File.open(log)
+    file = File.open(log, :encoding => "US-ASCII")
   end
-  
+
   while (line = file.gets)
-    if (line =~ /.*System.*Wake/)
-      # This is a wakup it could be "System Wake" or "System SafeSleep Wake"
-      events.push(LoggedEvent.new(line, :wake))
-    elsif (line =~ /.*System SafeSleep$/)
-      # This is a sleep
-      # need to find the cooresponding wake event and close it          
-      events.push(LoggedEvent.new(line, :sleep))
+    begin
+      if (line =~ /.*System.*Wake/)
+        # This is a wakup it could be "System Wake" or "System SafeSleep Wake"
+        events.push(LoggedEvent.new(line, :wake))
+      elsif (line =~ /.*System SafeSleep$/)
+        # This is a sleep
+        # need to find the cooresponding wake event and close it
+        events.push(LoggedEvent.new(line, :sleep))
+      end
+    rescue
+      puts "Error compairing string: #{line}"
     end
   end
-  
+
   file.close
 }
 
-year = options[:year] 
+year = options[:year]
 month = options[:month]
 
 start_time = Time.local(year, month).to_datetime
-end_time = Time.local(year, month + 1).to_datetime
+end_time = Time.local(year, month).to_datetime >> 1
 
 events = events.select { |event| event.date_time > start_time and event.date_time < end_time}
 
@@ -75,7 +79,7 @@ last_event = nil
 new_events = []
 events.each { |event|
   if (event.type == :wake and last_event and last_event.type == :sleep and (last_event.date_time + (4.0/(60*24))) > event.date_time)
-    # remove last event 
+    # remove last event
     new_events.pop
     # skip the current wake
     next
@@ -89,12 +93,12 @@ events = new_events
 cal = Icalendar::Calendar.new
 
 last_wake = nil
-events.each{ |event| 
+events.each{ |event|
   if event.type == :wake
     last_wake = event
     next
   end
-  
+
   if last_wake == nil
     puts "Got a sleep without a preceeding wake"
     next
@@ -105,7 +109,7 @@ events.each{ |event|
     dtend event.date_time
     description event.line
     summary "Laptop at #{event.location}"
-  }  
+  }
   last_wake = nil
 }
 

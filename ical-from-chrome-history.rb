@@ -35,13 +35,14 @@ def unixTime(gtime)
 end
 
 start_time = googleTime(Time.local(year, month).to_i)
-end_time = googleTime(Time.local(year, month + 1).to_i)
+end_time = googleTime((Time.local(year, month).to_datetime >> 1).to_time.to_i)
 
-# ["id", "from_visit", "place_id", "visit_date", "visit_type", "session", "id", "url", "title", 
+
+# ["id", "from_visit", "place_id", "visit_date", "visit_type", "session", "id", "url", "title",
 #  "rev_host", "visit_count", "hidden", "typed", "favicon_id", "frecency", "last_visit_date"]
 query = "select * from visits, urls " +
-        "where visits.url=urls.id " + 
-        "and visits.visit_time>#{start_time} " + 
+        "where visits.url=urls.id " +
+        "and visits.visit_time>#{start_time} " +
         "and visits.visit_time<#{end_time}"
 puts query
 length = 0
