@@ -5,6 +5,8 @@ require 'sqlite3'
 require 'date'
 require 'icalendar'
 require 'trollop'
+require 'uri'
+require 'cgi'
 
 # commandline option parsing, trollop is much more concise than optparse
 options = Trollop::options do
@@ -20,7 +22,7 @@ sqlite_file = options[:database]
 # "/Users/scytacki/Documents/CCProjects/Timesheets/june-2010/ch-history.ics"
 ics_file = options[:out]
 # 2010
-year = options[:year] 
+year = options[:year]
 # 6
 month = options[:month]
 
@@ -50,36 +52,41 @@ cal = Icalendar::Calendar.new
 
 class VisitEvent
   attr_accessor :visit_date, :from_visit, :url, :title, :session
-  
+
   def initialize(row)
     @from_visit = row[3].to_i
     @visit_date = row[2].to_i
-    @url = row[7]
-    @title = row[8]
+    @url = row[8]
+    @title = row[9]
+
+    if(@url == 'https://mail.google.com/a/concord.org/#inbox')
+      # in this case the title will just be the most recent email
+      @title = "CCMail Inbox"
+    end
   end
-  
+
   def visit_time
     # needs to be fixed for the timezone
     Time.at(unixTime(self.visit_date)) + 4*60*60
   end
-  
+
 end
 
 class VisitEventTrail
   attr_accessor :events
-  
+
   def initialize()
     @events = []
-  end  
-  
+  end
+
   def add(event)
     events.push event
   end
-  
+
   def dtstart
     events.first.visit_time.to_datetime
   end
-  
+
   def dtend
     first_time = events.first.visit_time
     # use a 8 minute minimun event size
@@ -89,11 +96,11 @@ class VisitEventTrail
     end
     end_time.to_datetime
   end
-  
+
   def description
     events.collect{|event|
       event.visit_time.strftime("%I:%M:%S") + ": " + event.title
-    }.join("\n")    
+    }.join("\n")
   end
 end
 
@@ -102,12 +109,12 @@ visit_trails = []
 
 db.execute(query) {|row|
   last_event = visit_events.last
-  puts row
+  # puts row
   event = VisitEvent.new(row)
   visit_events.push(event)
 
-  puts event.visit_time
-    
+  # puts event.visit_time
+
   # look for overlaping events
   if (last_event and (last_event.visit_time + 180) > event.visit_time)
     visit_trails.last.add event
@@ -125,8 +132,8 @@ visit_trails.each {|trail|
     dtend trail.dtend
     description trail.description
     summary trail.events.first.title
-    url trail.events.first.url    
-  }  
+    url trail.events.first.url
+  }
 }
 
 puts "length: #{visit_trails.length}"
