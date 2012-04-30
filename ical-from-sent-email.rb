@@ -46,8 +46,8 @@ msgs.each_with_index{|id, idx|
   # doesn't include the timezone when serializing the datetime
   start_date = start_date.to_time.to_datetime  
   end_date = (start_date.to_time + 8*60).to_datetime 
-  puts "start #{start_date}"
-  puts "end   #{end_date}"
+  putc '.'
+  # puts "start #{start_date} end   #{end_date}"
   cal.event{
     dtstart start_date
     dtend end_date
@@ -55,6 +55,8 @@ msgs.each_with_index{|id, idx|
     description (bodies[idx].attr["BODY[TEXT]"]).strip
   }    
 }
+
+puts "finished"
 
 # Icalendar::Component
 # def to_ical
