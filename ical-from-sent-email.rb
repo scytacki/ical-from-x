@@ -30,8 +30,8 @@ imap = Net::IMAP.new('imap.gmail.com', 993, true, nil, false)
 imap.login('scytacki@concord.org', get_password())
 imap.examine('[Gmail]/Sent Mail')
 msgs = imap.search(["BEFORE", imap_before, "SINCE", imap_since])
-subjects = imap.fetch(msgs, "BODY[HEADER.FIELDS (SUBJECT)]")
-puts 'downloaded subjects'
+headers = imap.fetch(msgs, "BODY[HEADER.FIELDS (TO CC SUBJECT)]")
+puts 'downloaded headers'
 dates = imap.fetch(msgs, "INTERNALDATE")
 puts 'downloaded dates'
 bodies = imap.fetch(msgs, "BODY[TEXT]")
@@ -51,8 +51,10 @@ msgs.each_with_index{|id, idx|
   cal.event{
     dtstart start_date
     dtend end_date
-    summary (subjects[idx].attr["BODY[HEADER.FIELDS (SUBJECT)]"]).strip.sub('Subject:', '')
-    description (bodies[idx].attr["BODY[TEXT]"]).strip
+    msg_headers = (headers[idx].attr["BODY[HEADER.FIELDS (TO CC SUBJECT)]"]).strip.sub('Subject:', '')
+    summary msg_headers
+    
+    description msg_headers + (bodies[idx].attr["BODY[TEXT]"]).strip
   }    
 }
 
