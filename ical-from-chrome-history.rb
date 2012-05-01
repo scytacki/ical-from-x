@@ -51,7 +51,7 @@ length = 0
 cal = Icalendar::Calendar.new
 
 class VisitEvent
-  attr_accessor :visit_date, :from_visit, :url, :title, :session
+  attr_accessor :visit_date, :from_visit, :url, :title, :session, :computed_title
 
   def initialize(row)
     @from_visit = row[3].to_i
@@ -59,15 +59,30 @@ class VisitEvent
     @url = row[8]
     @title = row[9]
 
-    if(@url == 'https://mail.google.com/a/concord.org/#inbox')
+    if(@url =~ %r{https://mail.google.com/.*#inbox$})
       # in this case the title will just be the most recent email
-      @title = "CCMail Inbox"
+      @computed_title = "GMail Inbox"
+    elsif(@url =~ %r{https://mail.google.com/.*#inbox/(\w*)$})
+      # in this case the title will just be the most recent email
+      @computed_title = "GMail Thread #{$1}"
+    elsif(@url =~ %r{https://plus.google.com})
+      @computed_title = "Google Plus"
     end
   end
 
   def visit_time
     # needs to be fixed for the timezone
     Time.at(unixTime(self.visit_date)) + 4*60*60
+  end
+  
+  def short_description
+    description = visit_time.strftime("%I:%M:%S") + ": "
+    if computed_title
+      description += computed_title
+    else
+      description += "#{title} -- #{url}"
+    end
+    description
   end
 
 end
@@ -99,8 +114,16 @@ class VisitEventTrail
 
   def description
     events.collect{|event|
-      event.visit_time.strftime("%I:%M:%S") + ": " + event.title
+      event.short_description
     }.join("\n")
+  end
+  
+  def summary
+    if events.first.computed_title
+      events.first.computed_title
+    else
+      events.first.title
+    end
   end
 end
 
@@ -131,7 +154,7 @@ visit_trails.each {|trail|
     dtstart trail.dtstart
     dtend trail.dtend
     description trail.description
-    summary trail.events.first.title
+    summary trail.summary
     url trail.events.first.url
   }
 }
