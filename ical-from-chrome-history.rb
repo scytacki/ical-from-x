@@ -7,6 +7,7 @@ require 'icalendar'
 require 'trollop'
 require 'uri'
 require 'cgi'
+require 'fileutils'
 
 # commandline option parsing, trollop is much more concise than optparse
 options = Trollop::options do
@@ -17,6 +18,8 @@ options = Trollop::options do
   opt :out, 'Output file to put the resulting ics', :type => :string
 end
 
+
+
 # "june-2010/chrome-history.sqlite"
 sqlite_file = options[:database]
 # "/Users/scytacki/Documents/CCProjects/Timesheets/june-2010/ch-history.ics"
@@ -25,6 +28,13 @@ ics_file = options[:out]
 year = options[:year]
 # 6
 month = options[:month]
+
+# copy the current chrome history file
+unless sqlite_file
+  out_dir = File.dirname ics_file
+  sqlite_file="#{out_dir}/ch-history.sqlite"
+  FileUtils.copy "#{ENV['HOME']}/Library/Application Support/Google/Chrome/Default/History", sqlite_file
+end
 
 db = SQLite3::Database.new( sqlite_file )
 
