@@ -8,6 +8,8 @@ require 'date'
 # commandline option parsing, trollop is much more concise than optparse
 options = Trollop::options do
   banner "Usage: #{$0} [options]"
+  opt :month, '(not implemented) Month to filter results with', :type => :int
+  opt :year, '(not implemented) Year to filter results with', :type => :int
   opt :out, 'Output file to put the resulting ics', :type => :string
 end
 
