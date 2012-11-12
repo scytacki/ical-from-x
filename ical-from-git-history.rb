@@ -40,7 +40,9 @@ options = Trollop::options do
   opt :out, 'Output file to put the resulting ics', :type => :string
 end
 
-date = Date.civil(options[:year], options[:month]);
+date = Date.civil(options[:year], options[:month])
+# git does not include the day itself so we need to go back one day
+date -= 1
 date_format = '%m/%d/%Y'
 month_start = date.strftime(date_format)
 
