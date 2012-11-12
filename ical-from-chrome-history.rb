@@ -1,6 +1,6 @@
-# this is currently based on the rvm 1.9.1%timesheet
+require "rubygems"
+require "bundler/setup"
 
-require 'rubygems'
 require 'sqlite3'
 require 'date'
 require 'icalendar'
@@ -8,6 +8,8 @@ require 'trollop'
 require 'uri'
 require 'cgi'
 require 'fileutils'
+require 'active_record'
+require 'debugger'
 
 # commandline option parsing, trollop is much more concise than optparse
 options = Trollop::options do
@@ -36,8 +38,6 @@ unless sqlite_file
   FileUtils.copy "#{ENV['HOME']}/Library/Application Support/Google/Chrome/Default/History", sqlite_file
 end
 
-db = SQLite3::Database.new( sqlite_file )
-
 def googleTime(time)
   1000000*time + 11644488003600000
 end
@@ -46,56 +46,59 @@ def unixTime(gtime)
   gtime/1000000 - 11644488003.6
 end
 
-start_time = googleTime(Time.local(year, month).to_i)
-end_time = googleTime((Time.local(year, month).to_datetime >> 1).to_time.to_i)
+ActiveRecord::Base.establish_connection(:adapter => 'sqlite3', :database => sqlite_file)
 
+class Visit < ActiveRecord::Base
+  belongs_to :chrome_url, foreign_key: :url
 
-# ["id", "from_visit", "place_id", "visit_date", "visit_type", "session", "id", "url", "title",
-#  "rev_host", "visit_count", "hidden", "typed", "favicon_id", "frecency", "last_visit_date"]
-query = "select * from visits, urls " +
-        "where visits.url=urls.id " +
-        "and visits.visit_time>#{start_time} " +
-        "and visits.visit_time<#{end_time}"
-puts query
-length = 0
-cal = Icalendar::Calendar.new
+  attr_accessor :session, :computed_title
 
-class VisitEvent
-  attr_accessor :visit_date, :from_visit, :url, :title, :session, :computed_title
+  def url
+    chrome_url.url
+  end
 
-  def initialize(row)
-    @from_visit = row[3].to_i
-    @visit_date = row[2].to_i
-    @url = row[8]
-    @title = row[9]
+  def title
+    chrome_url.title
+  end
 
-    if(@url =~ %r{https://mail.google.com/.*#inbox$})
+  def computed_title
+    case url
+    when %r{https://mail.google.com/.*#inbox$}
       # in this case the title will just be the most recent email
-      @computed_title = "GMail Inbox"
-    elsif(@url =~ %r{https://mail.google.com/.*#inbox/(\w*)$})
-      # in this case the title will just be the most recent email
-      @computed_title = "GMail Thread #{$1}"
-    elsif(@url =~ %r{https://plus.google.com})
-      @computed_title = "Google Plus"
+      "GMail Inbox"
+    when %r{https://mail.google.com/.*#inbox/(\w*)$}
+       # in this case the title will just be the most recent email
+      "GMail Thread #{$1}"
+    when %r{https://github.com/(.*)}
+      "Google Plus"
+    when %r{https://github.com/(.*)}
+      "GH: #{$1}"
+    when %r{https?://(.*)}
+      "#{title} -- #{$1}"
+    else
+      "#{title} -- #{url}"
     end
   end
 
   def visit_time
     # needs to be fixed for the timezone
-    Time.at(unixTime(self.visit_date)) + 4*60*60
+    Time.at(unixTime(super)) + 4*60*60
   end
-  
+
   def short_description
     description = visit_time.strftime("%I:%M:%S") + ": "
-    if computed_title
-      description += computed_title
-    else
-      description += "#{title} -- #{url}"
-    end
+    description += computed_title
     description
   end
 
 end
+
+class ChromeUrl < ActiveRecord::Base
+  self.table_name = :urls
+end
+
+start_time = googleTime(Time.local(year, month).to_i)
+end_time = googleTime((Time.local(year, month).to_datetime >> 1).to_time.to_i)
 
 class VisitEventTrail
   attr_accessor :events
@@ -140,13 +143,18 @@ end
 visit_events = []
 visit_trails = []
 
-db.execute(query) {|row|
+visits = Visit.where("visits.visit_time>#{start_time} and visits.visit_time<#{end_time}")
+visits.each { |event|
   last_event = visit_events.last
-  # puts row
-  event = VisitEvent.new(row)
-  visit_events.push(event)
 
-  # puts event.visit_time
+  # check if we want to keep this event
+  if event.url =~ %r{https://rpm.newrelic.com/accounts/.*/servers/.*} ||
+     event.url =~ %r{.*www.leftronic.com/share/g/.*/#dashboard.*} ||
+     event.url =~ %r{.*concord-consortium.github.com/concord-dashboard/}
+    next
+  end
+
+  visit_events.push(event)
 
   # look for overlaping events
   if (last_event and (last_event.visit_time + 180) > event.visit_time)
@@ -158,6 +166,8 @@ db.execute(query) {|row|
   visit_trail.add event
   visit_trails.push visit_trail
 }
+
+cal = Icalendar::Calendar.new
 
 visit_trails.each {|trail|
   cal.event {
