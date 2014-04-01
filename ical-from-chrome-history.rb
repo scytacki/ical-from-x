@@ -10,6 +10,7 @@ require 'cgi'
 require 'fileutils'
 require 'active_record'
 require 'debugger'
+require_relative 'lib/ical-patch'
 
 # commandline option parsing, trollop is much more concise than optparse
 options = Trollop::options do
@@ -181,5 +182,5 @@ visit_trails.each {|trail|
 
 puts "length: #{visit_trails.length}"
 File.open(ics_file, 'w') {|f|
-  f.write cal.to_ical
+  cal.to_ical_file(f)
 }
