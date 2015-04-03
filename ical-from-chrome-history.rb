@@ -145,11 +145,18 @@ visit_events = []
 visit_trails = []
 
 visits = Visit.where("visits.visit_time>#{start_time} and visits.visit_time<#{end_time}")
-visits.each { |event|
+puts "found #{visits.count} visits"
+dot_tracker = 0
+print "iterating visits"
+visits.find_each(batch_size: 1000) { |event|
+  print "." if dot_tracker == 0
+  dot_tracker = (dot_tracker + 1) % 50
   last_event = visit_events.last
 
   # check if we want to keep this event
-  if event.url =~ %r{https://rpm.newrelic.com/accounts/.*/servers/.*} ||
+  if event.url =~ %r{data:.*} ||
+     event.url =~ %r{https://www.pivotaltracker.com/.*} ||
+     event.url =~ %r{https://rpm.newrelic.com/accounts/.*} ||
      event.url =~ %r{.*www.leftronic.com/share/g/.*/#dashboard.*} ||
      event.url =~ %r{.*concord-consortium.github.com/concord-dashboard/}
     next
@@ -167,7 +174,8 @@ visits.each { |event|
   visit_trail.add event
   visit_trails.push visit_trail
 }
-
+puts ""
+puts "finished iterating"
 cal = Icalendar::Calendar.new
 
 visit_trails.each {|trail|
