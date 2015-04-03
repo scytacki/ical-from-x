@@ -47,7 +47,7 @@ date_format = '%m/%d/%Y'
 month_start = date.strftime(date_format)
 
 class Commit
-  attr_accessor :sha, :author_date, :commit_date, :summary, :repositories
+  attr_accessor :sha, :author_date, :commit_date, :summary, :repositories, :github_site
 
   def initialize
     @repositories = []
@@ -57,6 +57,20 @@ class Commit
     commit = Commit.new
     commit.parse(line)
     commit
+  end
+
+  def self.find_github_site(remotes)
+    # look for github.com
+    # could be like this:
+    #   git@github.com:concord-consortium/rigse.git
+    #   ssh://git@github.com/scytacki/sparkletest
+    #   https://github.com/concord-consortium/rigse.git
+    matches = /github.com[:\/]([^ .]*)(?:\.git| )/.match(remotes)
+    if matches
+      matches[1]
+    else
+      nil
+    end
   end
 
   def parse(line)
@@ -73,18 +87,26 @@ class Commit
   def repositories_str
     repositories.map{|repo| File.basename repo}.join (" ,");
   end
+
+  def github_url
+    if github_site
+      "http://github.com/#{github_site}/commit/#{sha}"
+    end
+  end
 end
 
 commits = {}
 
 repositories.each do |path|
   Dir.chdir(path) do
+    github_site = Commit.find_github_site `git remote -v`
     commit_subjects = `git log HEAD --no-merges --reverse --since='#{month_start}' --pretty=format:"%H\t%ad\t%cd\t%s%n" --author=#{author}`
     commit_lines = commit_subjects.split(/\n+/)
     commit_lines.each{|commit_line|
       current_commit = Commit.parse(commit_line)
       commit = commits[current_commit.sha]
       if commit.nil?
+        current_commit.github_site = github_site
         commit = current_commit
         commits[commit.sha] = commit
       end
@@ -103,6 +125,9 @@ commits.values.each do |commit|
     dtend commit.author_date
     summary "#{commit.summary}"
     description "#{commit.summary} #{commit.repositories_str} #{commit.sha}"
+    if commit.github_url
+      url commit.github_url
+    end
   }
 end
 
