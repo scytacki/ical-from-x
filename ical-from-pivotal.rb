@@ -71,10 +71,18 @@ class VisitEventTrail
     end_time.to_datetime
   end
 
+  def event_summary(event)
+    if (event['highlight'] == "added comment:")
+      event['message'].gsub("Scott Cytacki ","") + " to " + event['primary_resources'][0]['name']
+    else
+      "#{event['highlight']} #{event['primary_resources'][0]['name']}"
+    end
+  end
+
   def description
-  	output = "#{events.first['project']['name']}\n"
+  	output = ""
     output += events.collect{|event|
-      "- #{event_time(event).to_datetime..strftime('%R')} #{event['message'].gsub("Scott Cytacki ","")[0...200]}"
+      "#{event_time(event).to_datetime.strftime('%R')} #{event_summary(event)[0...200]}"
     }.join("\n")
   end
 
