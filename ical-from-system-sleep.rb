@@ -12,10 +12,14 @@ options = Trollop::options do
   opt :out, 'Output file to put the resulting ics', :type => :string
 end
 
+REPORT_YEAR = options[:year]
+
 # Jan 21 21:51:41 scotts-macbook kernel[0]: System SafeSleep (this happens a little bit before sleep while it is writing hiberation file)
 def get_log_time(line)
   data_string = line.match(/[\w]*[\s]*[\w]*[\s]*[^\s]*/)[0]
-  DateTime.parse(data_string)
+  # the year is not included, so this will fail if the current year is different
+  # for now we'll hack it to be the current year
+  date = DateTime.parse("#{data_string} #{REPORT_YEAR}")
 end
 
 class LoggedEvent
@@ -56,8 +60,9 @@ sys_logs.each { |log|
         # need to find the cooresponding wake event and close it
         events.push(LoggedEvent.new(line, :sleep))
       end
-    rescue
+    rescue Exception => error
       puts "Error compairing string: #{line}"
+      puts error.inspect
     end
   end
 
