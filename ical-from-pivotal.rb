@@ -21,12 +21,13 @@ end
 abort("Need to set PIVOTAL_TOKEN env variable") if !ENV['PIVOTAL_TOKEN'] || ENV['PIVOTAL_TOKEN'].empty?
 
 first_of_month = Time.local(options[:year],options[:month]).to_datetime.iso8601
-end_of_month = Time.local(options[:year],(options[:month]+1)%12).to_datetime.iso8601
+end_of_month = (Time.local(options[:year], options[:month]).to_datetime >> 1).iso8601
 
 PT_QUERY = "envelope=true&limit=100&occurred_after=#{first_of_month}&occurred_before=#{end_of_month}"
 PT_URL = "https://www.pivotaltracker.com/services/v5/my/activity?#{PT_QUERY}"
 def get_data(url)
-	`curl -X GET -H "X-TrackerToken: #{ENV['PIVOTAL_TOKEN']}" "#{url}"`
+  puts "PT URL: #{url}"
+  `curl -X GET -H "X-TrackerToken: #{ENV['PIVOTAL_TOKEN']}" "#{url}"`
 end
 
 total = 1
