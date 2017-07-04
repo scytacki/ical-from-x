@@ -101,7 +101,7 @@ commits.values.each do |commit|
     e.dtstart = (commit.author_date.to_time - duration).to_datetime
     e.dtend = commit.author_date
     e.summary = "#{commit.summary}"
-    description = "#{commit.summary} #{commit.repositories_str} #{commit.sha}"
+    e.description = "#{commit.summary} #{commit.repositories_str} #{commit.sha}"
     if commit.github_url
       e.url = commit.github_url
     end
